@@ -1,0 +1,284 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  ADMIN
+  HR_MANAGER
+  EMPLOYEE
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+  MATERNITY
+  PATERNITY
+  COMPASSIONATE
+  OTHER
+}
+
+// Conversation classification.
+// - DIRECT: strictly private user <-> user conversations.
+// - ORGANIZATIONAL: any conversation involving a department
+//   (employee->dept, dept->dept, dept->employee). These may be
+//   visible upward through the department hierarchy depending on
+//   authorization rules.
+enum ConversationType {
+  DIRECT
+  ORGANIZATIONAL
+}
+
+// ============================================================
+// USER
+// ============================================================
+
+model User {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String           @unique
+  password     String
+  phone        String?
+  position     String?
+  role         Role             @default(EMPLOYEE)
+  status       EmploymentStatus @default(ACTIVE)
+  dateJoined   DateTime         @default(now())
+  profileImage String?
+
+  // Soft delete — preserves historical records while removing the
+  // user from active use. Prefer this over hard deletes.
+  deactivatedAt DateTime?
+  deletedAt     DateTime?
+
+  // Department relations
+  departmentId String?     @db.ObjectId
+  department   Department? @relation("DepartmentEmployees", fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  headedDepartments Department[] @relation("DepartmentHead")
+
+  // Operational relations
+  attendances    Attendance[]
+  leaveRequests  LeaveRequest[] @relation("LeaveRequester")
+  reviewedLeaves LeaveRequest[] @relation("LeaveReviewer")
+
+  // Messaging relations
+  messages     Message[]
+  participants ConversationParticipant[]
+
+  // Notifications
+  notifications Notification[]
+
+  // Audit
+  auditLogs AuditLog[] @relation("AuditActor")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// DEPARTMENT (hierarchical)
+// ============================================================
+
+model Department {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique
+  description String?
+
+  // Department head — optional single head. Documented assumption:
+  // exactly one active employee can head a department at a time.
+  headId String? @db.ObjectId
+  head   User?   @relation("DepartmentHead", fields: [headId], references: [id], onDelete: SetNull)
+
+  // Hierarchy. Circular relationships and self-parenting are
+  // validated in the service layer (MongoDB does not enforce
+  // referential actions at the DB level).
+  parentId String?      @db.ObjectId
+  parent   Department?  @relation("SubDepartments", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Department[] @relation("SubDepartments")
+
+  // Materialized path for efficient ancestor/descendant queries.
+  // Example: "/org/hr/recruitment". Maintained by the service layer.
+  path String?
+
+  employees User[] @relation("DepartmentEmployees")
+
+  participants ConversationParticipant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
+
+model Attendance {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String    @db.ObjectId
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  date     DateTime // Normalized to midnight UTC (YYYY-MM-DD) — enforces daily uniqueness
+  clockIn  DateTime
+  clockOut DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeaveRequest {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String      @db.ObjectId
+  user      User        @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Restrict)
+  leaveType LeaveType
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  status    LeaveStatus @default(PENDING)
+
+  reviewerId String?   @db.ObjectId
+  reviewer   User?     @relation("LeaveReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt DateTime?
+  reviewNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// MESSAGING
+// ============================================================
+
+model Conversation {
+  id    String           @id @default(auto()) @map("_id") @db.ObjectId
+  type  ConversationType @default(DIRECT)
+  title String? // used for ORGANIZATIONAL conversations
+
+  // Deterministic key for DIRECT conversations to prevent duplicate
+  // conversations between the same two users. Format: sorted user IDs
+  // joined by ":" e.g. "userIdA:userIdB". Null for ORGANIZATIONAL.
+  dedupeKey String? @unique
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  // Denormalized convenience — updated on each new message.
+  lastMessageAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConversationParticipant {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String       @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Exactly one of userId / departmentId must be set. Enforced in
+  // the service layer.
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  departmentId String?     @db.ObjectId
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  // Soft removal from a conversation — keeps history intact.
+  isActive   Boolean   @default(true)
+  lastReadAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String       @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId String @db.ObjectId
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Restrict)
+
+  // Optional — allows attachment-only messages.
+  content String?
+
+  attachments Attachment[]
+
+  // Soft delete / edit tracking.
+  editedAt  DateTime?
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attachment {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  messageId String  @db.ObjectId
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  storageKey String // object storage reference / opaque key — NOT a public URL
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id      String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String    @db.ObjectId
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type    String // e.g. "MESSAGE_RECEIVED", "LEAVE_APPROVED"
+  payload Json
+  readAt  DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  actorId String? @db.ObjectId
+  actor   User?   @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  action     String // e.g. "EMPLOYEE_CREATED", "LEAVE_APPROVED"
+  entityType String // e.g. "User", "Department", "LeaveRequest"
+  entityId   String?
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+}

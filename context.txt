@@ -1,0 +1,42 @@
+design:
+[DESIGN SYSTEM CONTEXT - MANDATORY]
+You are generating a UI component for a high-productivity company/organization/employee management application where there are admins, departments hr managers and employees and other roles. 
+Strictly adhere to the following design system for component generation, pure Tailwind CSS classes.  Do not use external component libraries.
+
+1. COLOR PALETTE (Strict adherence required; always provide dark: variants):
+   - Primary (Focus & Momentum): Tailwind Indigo spectrum
+      text-indigo-400 / bg-indigo-500 / hover:bg-indigo-600
+   - Secondary (Project Tags & Categories): Tailwind Violet/Purple spectrum
+      bg-violet-950/50 text-violet-300 border-violet-800/60
+   - Semantic State Tokens (Crucial for Timer & Task Statuses):
+     * Active / Timer Running: Emerald ( bg-emerald-500/20 text-emerald-400 border-emerald-800/60)
+     * Paused / Pending: Amber (Dark: bg-amber-500/20 text-amber-400 border-amber-800/60)
+     * Completed: Slate ( text-slate-500 line-through)
+    
+   - Backgrounds (Architectural Slate/Zinc - High Clarity):
+     bg-slate-950 (Main Canvas) | bg-slate-900 (Cards, Modals, Elevators)
+   - Typography & Borders:
+      text-slate-100 (Headings) | text-slate-400 (Body) | border-slate-800/80
+
+2. SPACING, DENSITY & LAYOUT:
+   - Mobile-first responsive grid (sm:, md:, lg:, xl:).
+   - High information density with clean breathing room:
+     * Compact cards/list items: p-3.5 or p-4
+     * Standard project cards & tracking widgets: p-5 or p-6
+     * Dashboard sections/containers: space-y-4 or gap-4
+   - Tabular numerals (`font-mono` or `tabular-nums`) for timers, tracked hours, and stopwatches to prevent layout jitter.
+
+3. AESTHETICS & SHAPES:
+   - Corners: Use `rounded-xl` for standard cards/widgets and `rounded-lg` for buttons, badges, and inputs (crisp, precise, productivity-focused, always cursor-pointer, never add focus rings).
+   - Interactive: All actions must use `transition-all duration-200 ease-in-out` with hover elevation (`hover:border-slate-300 dark:hover:border-slate-700`).
+   - Active Indicators: Pulsing dots (`animate-pulse`) on active timers; crisp radial progress or bar fills for project completion %.
+   
+4. CODE OUTPUT RULES:
+   - Return clean, semantic HTML/JSX using ONLY pure Tailwind CSS utility classes.
+   if you are implementing a function with a button or other activity always handle loading state with `disabled` and `loading` classes.
+   because it is a nextjs application separate the 'use client' directive component from server components. only write fetch data on server components and other logic on client components. 
+
+
+general overview: application is built with nextjs app router(both frontend and backend in the same project using nextjs api routes for all database related operations). 
+all the database operations return the exact same structure, it returns an object with success:boolean, message: string, data:(whatever object is necessary here)
+for failed operation the return obeject: success:false, message: string
