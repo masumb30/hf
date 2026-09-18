@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./Sidebar";
 import { getCurrentUser } from "@/lib/auth";
+import { ToastContainer } from "react-toastify";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,15 +29,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
 
-        <div className="flex min-h-[calc(100vh-4rem)] bg-slate-950">
-      {/* Sidebar navigation */}
-      <Sidebar user={user}/>
-
-      {/* Main page content area */}
-      <main className="flex-1 overflow-y-auto p-2 sm:p-8">
         {children}
-      </main>
-    </div>
       </body>
     </html>
   );

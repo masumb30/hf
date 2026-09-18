@@ -1,36 +1,43 @@
-// utils/apiWrapper.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 
-
-
-// 1. Reusable Global Error Response Helper
 export function errorResponse(message: string, status: number = 400) {
   return NextResponse.json({ success: false, message }, { status });
 }
 
-// Type definition for authenticated user
 export interface AuthUser {
   id: string;
   email: string;
-  role: string;
+  role: 'ADMIN' | 'HR_MANAGER' | 'EMPLOYEE';
+  name: string;
+  departmentId: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
 }
 
-// Type for your controller logic
+export type RouteContext = {
+  params?: Promise<Record<string, string>>;
+};
+
 export type AuthenticatedHandler = (
   req: Request,
-  context: { params: any },
+  context: RouteContext,
   user: AuthUser
 ) => Promise<NextResponse> | NextResponse;
 
-// 2. Centralized Auth & Error Wrapper HOF
-export function withAuth(handler: AuthenticatedHandler) {
-  return async (req: Request, context: { params: any }) => {
+export type Role = AuthUser['role'];
+
+export function hasRequiredRole(userRole: Role, allowedRoles: Role[]): boolean {
+  return allowedRoles.includes(userRole);
+}
+
+export function withAuth(
+  handler: AuthenticatedHandler,
+  allowedRoles?: Role[]
+) {
+  return async (req: Request, context: RouteContext) => {
     try {
-      // Get cookie using Next.js headers helper
       const cookieStore = await cookies();
       const token = cookieStore.get('token')?.value;
 
@@ -38,32 +45,73 @@ export function withAuth(handler: AuthenticatedHandler) {
         return errorResponse('Unauthorized: No token provided', 401);
       }
 
-      // Verify JWT
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+        id: string;
+      };
 
-      // Query Prisma
       const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: { id: true, email: true, role: true },
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          name: true,
+          departmentId: true,
+          status: true,
+          deactivatedAt: true,
+          deletedAt: true,
+        },
       });
 
-      if (!user) {
+      if (!user || user.deletedAt) {
         return errorResponse('Unauthorized: User not found', 401);
       }
 
-      // Pass user down to the controller handler
-      return await handler(req, context, user);
+      if (user.deactivatedAt || user.status !== 'ACTIVE') {
+        return errorResponse('Forbidden: Account is not active', 403);
+      }
 
-    } catch (error: any) {
-      // Global error handler catch block
+      if (allowedRoles && allowedRoles.length > 0) {
+        if (!hasRequiredRole(user.role, allowedRoles)) {
+          return errorResponse('Forbidden: Insufficient permissions', 403);
+        }
+      }
+
+      return await handler(req, context, {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        departmentId: user.departmentId,
+        status: user.status,
+      });
+    } catch (error: unknown) {
       console.error('API Error:', error);
+      const name = typeof error === 'object' && error && 'name' in error
+        ? String((error as { name: string }).name)
+        : '';
 
-      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      if (name === 'JsonWebTokenError' || name === 'TokenExpiredError') {
         return errorResponse('Invalid or expired token', 401);
       }
 
-      // Fallback internal server error
       return errorResponse('Internal Server Error', 500);
     }
   };
+}
+
+export async function readBody(req: Request) {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function paramId(
+  context: RouteContext,
+  key = 'id'
+): Promise<string | undefined> {
+  const params = context.params ? await context.params : undefined;
+  return params?.[key];
 }

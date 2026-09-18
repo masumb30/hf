@@ -1,0 +1,416 @@
+# PROJECT: HRFlow — HR & Internal Communication Management Platform
+
+# STACK (MANDATORY)
+- Next.js 16.3.5 (App Router)
+- TypeScript (strict)
+- Prisma ORM
+- MongoDB
+- Tailwind CSS
+- Auth: using jwt and the utils/apiwrapper.ts for authentication
+
+# NEXT 16 ROUTE HANDLER SIGNATURE (CRITICAL)
+Dynamic params are a Promise — always await them:
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+}
+
+# CONVENTIONS
+- API folder: app/api/**
+- Each route.ts exports one handler per HTTP method (GET, POST, PATCH, PUT, DELETE).
+- Folder naming: kebab-case for multi-word; plain lowercase for single word.
+- No version prefix.
+- Auth namespace: api/auth/me, api/auth/sign-in, api/auth/sign-up, api/auth/sign-out.
+- Self-scoped views use /me singleton: attendance/me, leave/me, notifications/me, dashboard/me.
+- State transitions get their own sub-route with PATCH (e.g., users/[id]/deactivate).
+- Plain field edits use PATCH on the base resource.
+- Search/filter via query params on list endpoints (?q=&role=&dept=&status=).
+- Conversation creation: single POST at conversations/route.ts with type-discriminated body.
+- Dashboard: role-scoped summary routes + granular concern routes.
+- Uploads: Route Handlers with multipart/form-data.
+- Audit logs: Admin only.
+
+# GLOBAL RULES (APPLY TO EVERY ENDPOINT)
+1. Must be authenticated (except sign-in, sign-up).
+2. Input validated (Zod).
+3. Authorization enforced SERVER-SIDE — not just UI.
+4. deletedAt != null users cannot authenticate or act.
+5. deactivatedAt != null users cannot act; HR/Admin can still read their historical records.
+6. Soft-deleted records excluded from default lists.
+7. Audit log writes happen in the SAME transaction as the mutation.
+8. Attachment access requires conversation participation — storageKey alone is never enough.
+
+# ROLES
+- ADMIN
+- HR_MANAGER
+- EMPLOYEE
+
+# ROLE LEGEND IN ROUTE MAP
+- (admin)          = Admin only
+- (admin, hr)      = Admin + HR Manager
+- (admin, hr, employee) = all authenticated roles
+- (self)           = acting user operating on own record (relationship check on top of role)
+- (participant)    = active participant of the conversation
+- (public)         = no auth required
+- (admin, hr, dept_head) = including department head of sender department
+
+# LEAVE REVIEW RULE (OPTION B)
+Helper: canReviewLeave(actor, target)
+Returns true only when ALL hold:
+1. actor.id !== target.id
+2. target.status === ACTIVE
+3. target.role === EMPLOYEE   → actor.role ∈ { ADMIN, HR_MANAGER }
+4. target.role === HR_MANAGER → actor.role === ADMIN
+5. target.role === ADMIN      → actor.role === ADMIN AND actor.id !== target.id
+
+Single-admin edge case: Admin leave request stays PENDING indefinitely (documented assumption).
+
+# PENDING LEAVE SCOPING
+- Admin GET /leave/pending → sees ALL pending.
+- HR    GET /leave/pending → sees ONLY EMPLOYEE-originated pending (HR-actionable).
+
+# DIRECT MESSAGE PRIVACY
+- DIRECT conversations: only the two users in dedupeKey.
+- Admin/HR get NO bypass to DIRECT conversations.
+- ORGANIZATIONAL conversations: participants + upward hierarchy (via Department.path) for departmental comms.
+
+# SEED DATA REQUIRED
+- 2 Admins
+- 2 HR Managers
+- ~4 Employees
+- Department tree (Organization → Human Resources → Recruitment / Training / Employee Welfare; Operations → Field Operations → Maintenance; Finance → Accounts / Audit)
+- Sample attendance, leaves, conversations.
+
+# ============================================================
+# COMPLETE FOLDER TREE
+# ============================================================
+
+app/api/
+  auth/
+    me/route.ts                                         GET
+    sign-in/route.ts                                    POST
+    sign-up/route.ts                                    POST
+    sign-out/route.ts                                   POST
+
+  users/
+    route.ts                                            GET, POST
+    directory/route.ts                                  GET
+    [id]/
+      route.ts                                          GET, PATCH, DELETE
+      role/route.ts                                     PATCH
+      deactivate/route.ts                               PATCH
+      reactivate/route.ts                               PATCH
+      terminate/route.ts                                PATCH
+      department/route.ts                               PATCH, DELETE
+      profile-image/route.ts                            PATCH
+
+  departments/
+    route.ts                                            GET, POST
+    tree/route.ts                                       GET
+    [id]/
+      route.ts                                          GET, PATCH
+      parent/route.ts                                   PATCH
+      head/route.ts                                     PATCH, DELETE
+      ancestors/route.ts                                GET
+      descendants/route.ts                              GET
+      employees/route.ts                                GET
+
+  attendance/
+    route.ts                                            GET
+    clock-in/route.ts                                   POST
+    clock-out/route.ts                                  POST
+    stats/route.ts                                      GET
+    me/
+      route.ts                                          GET
+      stats/route.ts                                    GET
+    user/[id]/route.ts                                  GET
+
+  leave/
+    route.ts                                            GET, POST
+    pending/route.ts                                    GET
+    history/route.ts                                    GET
+    me/
+      route.ts                                          GET
+      [id]/route.ts                                     GET
+    [id]/
+      route.ts                                          GET
+      approve/route.ts                                  PATCH
+      reject/route.ts                                   PATCH
+      cancel/route.ts                                   PATCH
+
+  conversations/
+    route.ts                                            GET, POST
+    me/route.ts                                         GET
+    [id]/
+      route.ts                                          GET
+      messages/route.ts                                 GET, POST
+      participants/
+        route.ts                                        GET, POST
+        [participantId]/route.ts                        DELETE
+      read/route.ts                                     PATCH
+      leave/route.ts                                    PATCH
+
+  messages/
+    [id]/
+      route.ts                                          GET, PATCH, DELETE
+      attachments/route.ts                              GET, POST
+
+  attachments/
+    [id]/
+      route.ts                                          GET
+      download/route.ts                                 GET
+      preview/route.ts                                  GET
+
+  notifications/
+    me/route.ts                                         GET
+    read-all/route.ts                                   PATCH
+    [id]/
+      route.ts                                          DELETE
+      read/route.ts                                     PATCH
+
+  audit-logs/
+    route.ts                                            GET
+    [id]/route.ts                                       GET
+
+  dashboard/
+    admin/route.ts                                      GET
+    hr/route.ts                                         GET
+    me/route.ts                                         GET
+    attendance-trends/route.ts                          GET
+    leave-trends/route.ts                               GET
+    employee-distribution/route.ts                      GET
+    department-stats/route.ts                           GET
+    recent-activities/route.ts                          GET
+    recent-messages/route.ts                            GET
+
+# ============================================================
+# PER-FILE HANDLER × ROLE MATRIX
+# ============================================================
+
+# AUTH
+auth/me/route.ts                                     GET    getSession                         (admin, hr, employee)
+auth/sign-in/route.ts                                POST   login                              (public)
+auth/sign-up/route.ts                                POST   registerUser                       (public)
+auth/sign-out/route.ts                               POST   logout                             (admin, hr, employee)
+
+# USERS
+users/route.ts                                       GET    getAllUsers (search/filter via q,role,dept,status)   (admin, hr)
+users/route.ts                                       POST   createUser                         (admin, hr)
+users/directory/route.ts                             GET    getEmployeeDirectory               (admin, hr, employee)
+users/[id]/route.ts                                  GET    getUserById                        (admin, hr, self)
+users/[id]/route.ts                                  PATCH  updateUser                         (admin, hr, self)
+users/[id]/route.ts                                  DELETE deleteUser (soft: deletedAt)        (admin)
+users/[id]/role/route.ts                             PATCH  changeUserRole                     (admin)
+users/[id]/deactivate/route.ts                       PATCH  deactivateUser                     (admin, hr)
+users/[id]/reactivate/route.ts                       PATCH  reactivateUser                     (admin, hr)
+users/[id]/terminate/route.ts                        PATCH  terminateUser                      (admin, hr)
+users/[id]/department/route.ts                       PATCH  assignEmployeeToDepartment        (admin, hr)
+users/[id]/department/route.ts                       DELETE removeEmployeeFromDepartment      (admin, hr)
+users/[id]/profile-image/route.ts                    PATCH  updateProfileImage                (self)
+
+Self restrictions on updateUser: cannot change role, status, departmentId, deactivatedAt, deletedAt.
+
+# DEPARTMENTS
+departments/route.ts                                 GET    getAllDepartments (flat)           (admin, hr, employee)
+departments/route.ts                                 POST   createDepartment                   (admin, hr)
+departments/tree/route.ts                            GET    getDepartmentTree                  (admin, hr, employee)
+departments/[id]/route.ts                            GET    getDepartmentById                  (admin, hr, employee)
+departments/[id]/route.ts                            PATCH  updateDepartment (name, desc)      (admin, hr)
+departments/[id]/parent/route.ts                     PATCH  moveDepartment (cycle-validated)   (admin, hr)
+departments/[id]/head/route.ts                       PATCH  assignDepartmentHead (ACTIVE only) (admin, hr)
+departments/[id]/head/route.ts                       DELETE removeDepartmentHead              (admin, hr)
+departments/[id]/ancestors/route.ts                  GET    getDepartmentAncestors (via path)  (admin, hr)
+departments/[id]/descendants/route.ts                GET    getDepartmentDescendants (via path)(admin, hr)
+departments/[id]/employees/route.ts                  GET    getUsersByDepartment               (admin, hr)
+
+No deleteDepartment in v1.
+
+# ATTENDANCE
+attendance/route.ts                                  GET    getAllAttendance (?from,to,userId) (admin, hr)
+attendance/clock-in/route.ts                         POST   clockIn                            (admin, hr, employee)
+attendance/clock-out/route.ts                        POST   clockOut                           (admin, hr, employee)
+attendance/stats/route.ts                            GET    getAttendanceStats                 (admin, hr)
+attendance/me/route.ts                               GET    getMyAttendance (?from,to)         (admin, hr, employee)
+attendance/me/stats/route.ts                         GET    getMyAttendanceStats               (admin, hr, employee)
+attendance/user/[id]/route.ts                        GET    getAttendanceByUser                (admin, hr)
+
+No manual create/edit in v1.
+
+# LEAVE
+leave/route.ts                                       GET    getAllLeaveRequests (?status)      (admin, hr)
+leave/route.ts                                       POST   submitLeaveRequest                 (admin, hr, employee)
+leave/pending/route.ts                               GET    getPendingLeaveRequests (scoped)   (admin, hr)
+leave/history/route.ts                               GET    getLeaveHistory                    (admin, hr)
+leave/me/route.ts                                    GET    getMyLeaveRequests                 (admin, hr, employee)
+leave/me/[id]/route.ts                               GET    getMyLeaveRequestById              (admin, hr, employee)
+leave/[id]/route.ts                                  GET    getLeaveRequestById                (admin, hr, self)
+leave/[id]/approve/route.ts                          PATCH  approveLeaveRequest (canReviewLeave)(admin, hr*)
+leave/[id]/reject/route.ts                           PATCH  rejectLeaveRequest (canReviewLeave) (admin, hr*)
+leave/[id]/cancel/route.ts                           PATCH  cancelLeaveRequest (PENDING only)   (self)
+
+* Target-based gate via canReviewLeave.
+
+# CONVERSATIONS
+conversations/route.ts                               GET    getMyConversations                 (admin, hr, employee)
+conversations/route.ts                               POST   createConversation (type-discriminated body)  (depends on type)
+conversations/me/route.ts                            GET    getMyConversations (alias)         (admin, hr, employee)
+conversations/[id]/route.ts                          GET    getConversationById                (participant)
+conversations/[id]/messages/route.ts                 GET    getConversationMessages            (participant)
+conversations/[id]/messages/route.ts                 POST   sendMessage                        (participant)
+conversations/[id]/participants/route.ts             GET    listParticipants                   (participant)
+conversations/[id]/participants/route.ts             POST   addParticipant (ORGANIZATIONAL)    (admin, hr)
+conversations/[id]/participants/[participantId]/route.ts DELETE removeParticipant (ORGANIZATIONAL)   (admin, hr)
+conversations/[id]/read/route.ts                     PATCH  markConversationRead               (participant)
+conversations/[id]/leave/route.ts                    PATCH  leaveConversation                  (participant)
+
+POST createConversation role gate by type:
+  DIRECT              → (admin, hr, employee)
+  EMPLOYEE_TO_DEPT    → (admin, hr, employee)
+  DEPT_TO_DEPT        → (admin, hr, dept_head(sender_dept))
+  DEPT_TO_EMPLOYEE    → (admin, hr, dept_head(sender_dept))
+
+# MESSAGES
+messages/[id]/route.ts                              GET    getMessageById                     (participant)
+messages/[id]/route.ts                              PATCH  editMessage (sets editedAt)        (self: sender)
+messages/[id]/route.ts                              DELETE deleteMessage (soft: deletedAt)     (self: sender)
+messages/[id]/attachments/route.ts                  GET    listMessageAttachments             (participant)
+messages/[id]/attachments/route.ts                  POST   uploadAttachment (multipart)       (self: message sender)
+
+# ATTACHMENTS
+attachments/[id]/route.ts                           GET    getAttachmentMetadata              (participant)
+attachments/[id]/download/route.ts                  GET    downloadAttachment                 (participant)
+attachments/[id]/preview/route.ts                   GET    previewAttachment (images/PDF)     (participant)
+
+No deleteAttachment in v1.
+
+# NOTIFICATIONS
+notifications/me/route.ts                           GET    getMyNotifications                 (admin, hr, employee)
+notifications/read-all/route.ts                     PATCH  markAllNotificationsRead           (self)
+notifications/[id]/read/route.ts                    PATCH  markNotificationRead               (self)
+notifications/[id]/route.ts                         DELETE deleteNotification                 (self)
+
+No manual create — system-generated only.
+
+# AUDIT LOGS
+audit-logs/route.ts                                 GET    getAuditLogs (?entityType,entityId,actorId)  (admin)
+audit-logs/[id]/route.ts                            GET    getAuditLogById                    (admin)
+
+Read-only. Writes happen internally. Never delete.
+
+# DASHBOARD
+dashboard/admin/route.ts                            GET    getAdminDashboard                  (admin)
+dashboard/hr/route.ts                               GET    getHrDashboard                     (hr)
+dashboard/me/route.ts                               GET    getEmployeeDashboard               (admin, hr, employee)
+dashboard/attendance-trends/route.ts                GET    getAttendanceTrends                (admin, hr)
+dashboard/leave-trends/route.ts                     GET    getLeaveTrends                     (admin, hr)
+dashboard/employee-distribution/route.ts            GET    getEmployeeDistribution            (admin, hr)
+dashboard/department-stats/route.ts                 GET    getDepartmentStats                 (admin, hr)
+dashboard/recent-activities/route.ts                GET    getRecentActivities                (admin, hr)
+dashboard/recent-messages/route.ts                  GET    getRecentMessages                  (admin, hr, employee)
+
+HR dashboard pending count = HR-actionable only (excludes HR/Admin-originated pending).
+
+# ============================================================
+# HELPER LAYER (lib/)
+# ============================================================
+
+lib/
+  auth/
+    session.ts              getSession(req), requireAuth()
+    password.ts             hash, verify
+  permissions/
+    roles.ts                requireRole(...roles)
+    leave.ts                canReviewLeave(actor, target)
+    conversations.ts        canViewConversation(actor, conv)
+    departments.ts          canModifyHierarchy(actor), isDeptHead(actor, dept)
+  validation/
+    user.schema.ts          Zod
+    department.schema.ts    Zod
+    attendance.schema.ts    Zod
+    leave.schema.ts         Zod
+    conversation.schema.ts  Zod
+    message.schema.ts       Zod
+    attachment.schema.ts    Zod
+  db/
+    prisma.ts               PrismaClient singleton
+  storage/
+    object-storage.ts       upload, signedUrl, delete
+  http/
+    responses.ts            ok(), created(), badRequest(), unauthorized(), forbidden(), notFound(), serverError()
+    with-handler.ts         HOF: auth → validate → authorize → run → audit
+
+# withHandler HOF should enforce:
+1. Auth check
+2. Role check
+3. Zod validation of body/query/params
+4. try/catch → standardized error responses
+5. Audit log write (when applicable)
+
+# ============================================================
+# PRISMA SCHEMA SUMMARY (for reference)
+# ============================================================
+
+Models: User, Department, Attendance, LeaveRequest, Conversation, ConversationParticipant, Message, Attachment, Notification, AuditLog.
+
+Enums:
+  Role              ADMIN | HR_MANAGER | EMPLOYEE
+  EmploymentStatus  ACTIVE | INACTIVE | TERMINATED
+  LeaveStatus       PENDING | APPROVED | REJECTED | CANCELLED
+  LeaveType         ANNUAL | SICK | UNPAID | MATERNITY | PATERNITY | COMPASSIONATE | OTHER
+  ConversationType  DIRECT | ORGANIZATIONAL
+
+Key fields:
+  User:        deactivatedAt (soft), deletedAt (soft), departmentId, role, status
+  Department:  parentId, path (materialized), headId, children
+  Attendance:  (userId, date) daily unique; clockIn, clockOut
+  LeaveRequest: userId, reviewerId, status, reviewNote, reviewedAt
+  Conversation: type, dedupeKey (DIRECT only, sorted user IDs "a:b"), lastMessageAt
+  ConversationParticipant: userId OR departmentId (exactly one), isActive, lastReadAt
+  Message:     conversationId, senderId, content?, editedAt, deletedAt
+  Attachment:  messageId, fileName, mimeType, fileSize, storageKey (opaque)
+  Notification: userId, type, payload Json, readAt
+  AuditLog:    actorId?, action, entityType, entityId, metadata Json
+
+# ============================================================
+# SUMMARY COUNTS
+# ============================================================
+
+Route files: 64
+Handler functions: 79
+
+Breakdown:
+  Auth            4 files / 4 handlers
+  Users           8 files / 13 handlers
+  Departments     8 files / 11 handlers
+  Attendance      7 files / 7 handlers
+  Leave           9 files / 10 handlers
+  Conversations   8 files / 11 handlers
+  Messages        2 files / 5 handlers
+  Attachments     3 files / 3 handlers
+  Notifications   4 files / 4 handlers
+  Audit Logs      2 files / 2 handlers
+  Dashboard       9 files / 9 handlers
+
+# ============================================================
+# AMBIGUOUS ITEMS (INTERPRETED — DOCUMENT IN README)
+# ============================================================
+- Public sign-up creates EMPLOYEE, ACTIVE, no department.
+- updateUser allows self, but self cannot change role/status/departmentId.
+- updateProfileImage is self-only.
+- getMyAttendanceStats as a separate endpoint.
+- Department read access for employees (flat list, tree, by id).
+- removeEmployeeFromDepartment as DELETE on users/[id]/department.
+- removeDepartmentHead as DELETE on departments/[id]/head.
+- cancelLeaveRequest allowed only on PENDING.
+- Conversation POST role gate varies by type.
+- editMessage / deleteMessage with no time limit.
+- previewAttachment as a separate endpoint.
+- deleteNotification allowed.
+- HR dashboard pending count = HR-actionable only.
+
+# ============================================================
+# END OF CONTEXT
+# ============================================================
