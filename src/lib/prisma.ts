@@ -1,17 +1,18 @@
 import { PrismaClient, Prisma } from "../../generated/prisma/client";
 
 export { Prisma };
-
-// const prisma = new PrismaClient();
-
-// export { prisma };
-
-// for serverless vercel code: 
 import "dotenv/config";
-// import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 export const prisma = globalForPrisma.prisma || new PrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+
+// const prisma = new PrismaClient();
+
+// export { prisma };
+
+// for serverless vercel code: 
+// import { PrismaClient } from '@prisma/client'
