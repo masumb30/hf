@@ -4,6 +4,8 @@ import "./globals.css";
 import Sidebar from "./Sidebar";
 import { getCurrentUser } from "@/lib/auth";
 import { ToastContainer } from "react-toastify";
+import { UserProvider } from "./context/UserProvider";
+import { getSession } from "@/lib/session";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,15 +23,18 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const user = await getCurrentUser();
+  const user = await getSession();
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <UserProvider user={user}>
 
-        {children}
+
+          {children}
+        </UserProvider>
       </body>
     </html>
   );

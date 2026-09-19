@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
+import { prisma } from '@/lib/prisma';
+import { createDepartmentAction } from '../actions/departmentActions';
 
 interface FlatDept {
   id: string;
@@ -72,20 +74,20 @@ export default function DepartmentForm({ mode, flat, initialParentId, initial, o
       };
       if (!isEdit) body.parentId = parentId || null;
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const data = await createDepartmentAction({
+        name: name.trim(),
+        description: description.trim() || null,
+        parentId: parentId || null,
+      })
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message ?? 'Request failed');
+      console.log('department created', data);
+      if(data.id){
+
+        
+        toast.success(isEdit ? 'Department updated' : 'Department created');
+        router.refresh();
+        onClose();
       }
-
-      toast.success(isEdit ? 'Department updated' : 'Department created');
-      router.refresh();
-      onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
       toast.error(message);
@@ -99,7 +101,7 @@ export default function DepartmentForm({ mode, flat, initialParentId, initial, o
   return (
     <Modal onClose={onClose} title={isEdit ? 'Edit department' : 'New department'}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Name" error={errors.name} required>
+        <Field label="Namekjh" error={errors.name} required>
           <input
             autoFocus
             value={name}

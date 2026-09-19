@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/auth/session';
-import { prisma } from '@/lib/db/prisma';
 import EmployeeForm from '../_components/EmployeeForm';
+import { getSession } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
 
 export default async function NewEmployeePage() {
   const session = await getSession();

@@ -3,17 +3,14 @@
 import Link from 'next/link';
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useUser } from '@/app/context/UserProvider';
 
 interface UserRow {
   id: string;
   name: string;
   email: string;
-  phone: string | null;
-  position: string | null;
   role: string;
   status: string;
-  dateJoined: Date;
-  profileImage: string | null;
   department: { id: string; name: string } | null;
 }
 
@@ -24,9 +21,9 @@ interface Department {
 
 interface Props {
   users: UserRow[];
-  departments: Department[];
-  filters: { q: string; role: string; dept: string; status: string };
-  pagination: { page: number; totalPages: number; total: number };
+  // departments: Department[];
+  // filters: { q: string; role: string; dept: string; status: string };
+  // pagination: { page: number; totalPages: number; total: number };
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -56,25 +53,28 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-export default function EmployeesClient({ users, departments, filters, pagination }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+export default function EmployeesClient({ users, 
+  // departments, filters, pagination 
+}: Props) {
+  const user = useUser();
+  // const router = useRouter();
+  // const pathname = usePathname();
+  // const searchParams = useSearchParams();
+  // const [isPending, startTransition] = useTransition();
 
-  const [q, setQ] = useState(filters.q);
-  const [role, setRole] = useState(filters.role);
-  const [dept, setDept] = useState(filters.dept);
-  const [status, setStatus] = useState(filters.status);
+  // const [q, setQ] = useState(filters.q);
+  // const [role, setRole] = useState(filters.role);
+  // const [dept, setDept] = useState(filters.dept);
+  // const [status, setStatus] = useState(filters.status);
 
-  // Debounced search input
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (q !== filters.q) applyFilters({ q });
-    }, 400);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  // // Debounced search input
+  // useEffect(() => {
+  //   const t = setTimeout(() => {
+  //     if (q !== filters.q) applyFilters({ q });
+  //   }, 400);
+  //   return () => clearTimeout(t);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [q]);
 
   function applyFilters(overrides: Partial<{ q: string; role: string; dept: string; status: string; page: string }>) {
     const next = new URLSearchParams(searchParams.toString());
@@ -95,21 +95,21 @@ export default function EmployeesClient({ users, departments, filters, paginatio
     });
   }
 
-  function changeRole(v: string) { setRole(v); applyFilters({ role: v }); }
-  function changeDept(v: string) { setDept(v); applyFilters({ dept: v }); }
-  function changeStatus(v: string) { setStatus(v); applyFilters({ status: v }); }
+  // function changeRole(v: string) { setRole(v); applyFilters({ role: v }); }
+  // function changeDept(v: string) { setDept(v); applyFilters({ dept: v }); }
+  // function changeStatus(v: string) { setStatus(v); applyFilters({ status: v }); }
 
-  function clearAll() {
-    setQ(''); setRole(''); setDept(''); setStatus('');
-    startTransition(() => router.push(pathname));
-  }
+  // function clearAll() {
+  //   setQ(''); setRole(''); setDept(''); setStatus('');
+  //   startTransition(() => router.push(pathname));
+  // }
 
-  const hasFilters = !!(filters.q || filters.role || filters.dept || filters.status);
+  // const hasFilters = !!(filters.q || filters.role || filters.dept || filters.status);
 
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {/* <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div className="relative md:col-span-2">
             <svg
@@ -170,10 +170,10 @@ export default function EmployeesClient({ users, departments, filters, paginatio
             </button>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Table */}
-      <div className={`overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-opacity dark:border-slate-800 dark:bg-slate-900 ${isPending ? 'opacity-60' : ''}`}>
+      <div className={`overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-opacity dark:border-slate-800 dark:bg-slate-900 opacity-60`}>
         {users.length === 0 ? (
           <div className="p-12 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
@@ -182,11 +182,9 @@ export default function EmployeesClient({ users, departments, filters, paginatio
               </svg>
             </div>
             <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-              {hasFilters ? 'No employees match your filters' : 'No employees yet'}
+              No employees yet
             </p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {hasFilters ? 'Try adjusting or clearing filters.' : 'Add your first employee to get started.'}
-            </p>
+            
           </div>
         ) : (
           <>
@@ -207,17 +205,14 @@ export default function EmployeesClient({ users, departments, filters, paginatio
                   {users.map((u) => {
                     const initials = u.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
                     return (
-                      <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                      <tr key={u.id} className={`hover:bg-slate-950/60  ${user.id === u.id ? 'bg-blue-600/10  ' : ''} cursor-pointer`}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            {u.profileImage ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={u.profileImage} alt={u.name} className="h-9 w-9 rounded-full object-cover" />
-                            ) : (
+                            
                               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
                                 {initials}
                               </div>
-                            )}
+                            
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{u.name}</p>
                               <p className="truncate text-xs text-slate-500 dark:text-slate-400">{u.email}</p>
@@ -227,9 +222,9 @@ export default function EmployeesClient({ users, departments, filters, paginatio
                         <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                           {u.department?.name ?? <span className="text-slate-400 dark:text-slate-500">—</span>}
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                        {/* <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                           {u.position ?? <span className="text-slate-400 dark:text-slate-500">—</span>}
-                        </td>
+                        </td> */}
                         <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                         <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                         <td className="px-4 py-3 text-right">
@@ -282,7 +277,7 @@ export default function EmployeesClient({ users, departments, filters, paginatio
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {/* {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Page {pagination.page} of {pagination.totalPages}
@@ -304,7 +299,7 @@ export default function EmployeesClient({ users, departments, filters, paginatio
             </button>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

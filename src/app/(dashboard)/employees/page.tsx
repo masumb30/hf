@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import EmployeesClient from './_components/EmployeesClient';
 import { getSession } from '@/lib/session';
-import { prisma } from '@/lib/prisma';
+import {  prisma } from '@/lib/prisma';
 
 interface PageProps {
   searchParams: Promise<{
@@ -22,66 +22,34 @@ export default async function EmployeesPage({ searchParams }: PageProps) {
 
   const role = session.role as 'ADMIN' | 'HR_MANAGER' | 'EMPLOYEE';
 
-  // Only ADMIN and HR can access this page.
-  if (role !== 'ADMIN' && role !== 'HR_MANAGER') {
-    redirect('/dashboard');
+  const fetchUsers = async()=> {
+    try{
+      const users = await prisma.user.findMany({
+        select:{
+          id:true,
+          name:true,
+          email:true,
+          role:true,
+          status:true,
+          department:{
+            select:{
+              id:true,
+              name:true
+            }
+          }
+        }
+      });
+      console.log(users);
+      return users;
+    }catch(err){
+      throw err;
+    }
+
   }
 
-  const params = await searchParams;
-  const q = (params.q ?? '').trim();
-  const roleFilter = params.role ?? '';
-  const deptFilter = params.dept ?? '';
-  const statusFilter = params.status ?? '';
-  const page = Math.max(parseInt(params.page ?? '1', 10) || 1, 1);
-  const skip = (page - 1) * PAGE_SIZE;
+  const users = await fetchUsers();
 
-  // Build where clause
-  const where: Record<string, unknown> = { deletedAt: null };
 
-  if (q) {
-    where.OR = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { email: { contains: q, mode: 'insensitive' } },
-      { position: { contains: q, mode: 'insensitive' } },
-    ];
-  }
-  if (roleFilter === 'ADMIN' || roleFilter === 'HR_MANAGER' || roleFilter === 'EMPLOYEE') {
-    where.role = roleFilter;
-  }
-  if (statusFilter === 'ACTIVE' || statusFilter === 'INACTIVE' || statusFilter === 'TERMINATED') {
-    where.status = statusFilter;
-  }
-  if (deptFilter) {
-    where.departmentId = deptFilter;
-  }
-
-  const [users, total, departments] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: PAGE_SIZE,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        position: true,
-        role: true,
-        status: true,
-        dateJoined: true,
-        profileImage: true,
-        department: { select: { id: true, name: true } },
-      },
-    }),
-    prisma.user.count({ where }),
-    prisma.department.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
-  ]);
-
-  const totalPages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -90,9 +58,9 @@ export default async function EmployeesPage({ searchParams }: PageProps) {
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
             Employees
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {total} {total === 1 ? 'employee' : 'employees'} in the organization.
-          </p>
+          {/* <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {total || 1} {total === 1 ? 'employee' : 'employees'} in the organization.
+          </p> */}
         </div>
         <Link
           href="/employees/new"
@@ -107,9 +75,9 @@ export default async function EmployeesPage({ searchParams }: PageProps) {
 
       <EmployeesClient
         users={users}
-        departments={departments}
-        filters={{ q, role: roleFilter, dept: deptFilter, status: statusFilter }}
-        pagination={{ page, totalPages, total }}
+        // departments={departments}
+        // filters={{ q, role: roleFilter, dept: deptFilter, status: statusFilter }}
+        // pagination={{ page, totalPages, total }}
       />
     </div>
   );

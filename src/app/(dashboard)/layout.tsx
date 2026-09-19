@@ -30,7 +30,7 @@ export default async function DashboardLayout({
   console.log(user);
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] bg-slate-950">
+    <div className="flex relative min-h-[calc(100vh-4rem)] bg-slate-950">
           {/* Sidebar navigation */}
           <Sidebar user={user} />
           <ToastContainer

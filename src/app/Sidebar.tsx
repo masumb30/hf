@@ -198,7 +198,7 @@ const NAV_MAP = {
     EMPLOYEE: EMPLOYEE_NAV_ITEMS,
 };
 
-export default function Sidebar({user}:{user:{id:string,email:string,role:string}}) {
+export default function Sidebar({user}:{user:{id:string,email:string,role:string, name:string}}) {
     // const { data: session } = useSession();
       const role = user?.role;
 
@@ -214,12 +214,23 @@ export default function Sidebar({user}:{user:{id:string,email:string,role:string
     }, []);
 
     const collapsed = isMobile || isCollapsed;
+    const handleLogout = async () => {
+        console.log('calling sign out')
+        await fetch('/api/auth/sign-out', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+        });
+        window.location.href = '/sign-in';
+    }
 
     return (
 
         <motion.aside
             initial={false}
-            className={`sticky top-16 flex h-[calc(100vh-4rem)] flex-col justify-between border-r border-slate-200/80 bg-white p-3 dark:border-slate-800/80 dark:bg-slate-900 md:p-4 overflow-hidden shrink-0 transition-[width] duration-250 ease-in-out ${isCollapsed ? 'w-[80px]' : 'w-[80px] md:w-[256px]'
+            className={`sticky  flex min-h-[100vh] flex-col justify-between border-r border-slate-200/80 bg-white p-3 dark:border-slate-800/80 dark:bg-slate-900 md:p-4 overflow-hidden shrink-0 transition-[width] duration-250 ease-in-out ${isCollapsed ? 'w-[80px]' : 'w-[80px] md:w-[256px]'
                 }`}
         >
             {/* Upper Navigation Links */}
@@ -296,7 +307,7 @@ export default function Sidebar({user}:{user:{id:string,email:string,role:string
             {/* Quick Profile / Status Footer at the bottom */}
             <div className="border-t border-slate-200/80 pt-3 dark:border-slate-800/80">
                 <div className={`flex items-center rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/60 ${isCollapsed ? 'justify-center' : 'justify-start gap-3'}`}>
-                    <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white shadow-sm">
+                    <div className="relative flex flex-col md:flex-row h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white shadow-sm">
                         JD
                         <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
                     </div>
@@ -305,8 +316,15 @@ export default function Sidebar({user}:{user:{id:string,email:string,role:string
                         transition={{ duration: 0.15 }}
                         className="min-w-0 flex-1 overflow-hidden"
                     >
-                        <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">Jane Doe</p>
-                        <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">Pro Member</p>
+                        <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">{user.name}</p>
+                        <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{user.role}</p>
+                    </motion.div>
+                    <motion.div
+                        animate={{ opacity: isCollapsed ? 0 : 1, display: isCollapsed ? 'none' : 'block' }}
+                        transition={{ duration: 0.15 }}
+                        className="min-w-0 flex-1 overflow-hidden "
+                    >
+                        <button className='hover:bg-red-400/30 p-2 rounded-md cursor-pointer' onClick={handleLogout}>Log out</button>
                     </motion.div>
                 </div>
             </div>

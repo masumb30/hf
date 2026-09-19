@@ -13,6 +13,7 @@ export const POST = withAuth(async () => {
     maxAge: 0,
     path: '/',
   });
+  console.log('performed sign out')
 
   return NextResponse.json({
     success: true,

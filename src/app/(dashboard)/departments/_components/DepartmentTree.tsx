@@ -44,6 +44,7 @@ export default function DepartmentTree({ tree, flat, users, canManage }: Props) 
 
   return (
     <div className="space-y-4">
+
       {canManage && (
         <div className="flex justify-end">
           <button
@@ -87,7 +88,8 @@ export default function DepartmentTree({ tree, flat, users, canManage }: Props) 
               />
             ))}
           </ul>
-        )}
+        )
+        }
       </div>
 
       {createOpen && (
@@ -98,6 +100,7 @@ export default function DepartmentTree({ tree, flat, users, canManage }: Props) 
           onClose={() => setCreateOpen(false)}
         />
       )}
+
     </div>
   );
 }

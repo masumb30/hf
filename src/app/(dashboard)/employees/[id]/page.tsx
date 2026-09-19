@@ -1,8 +1,8 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/auth/session';
-import { prisma } from '@/lib/db/prisma';
 import EmployeeForm from '../_components/EmployeeForm';
+import { getSession } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
 import EmployeeProfileActions from './_components/EmployeeProfileActions';
 
 interface PageProps {
@@ -77,7 +77,7 @@ export default async function EmployeeDetailPage({ params }: PageProps) {
     orderBy: { name: 'asc' },
   });
 
-  const initials = user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
+  const initials = user.name.split(' ').map((n:any) => n[0]).slice(0, 2).join('').toUpperCase();
   const canChangeRole = role === 'ADMIN';
 
   return (
@@ -146,7 +146,7 @@ export default async function EmployeeDetailPage({ params }: PageProps) {
             value={
               user.headedDepartments.length === 0
                 ? '—'
-                : user.headedDepartments.map((d) => d.name).join(', ')
+                : user.headedDepartments.map((d:any) => d.name).join(', ')
             }
           />
         </div>

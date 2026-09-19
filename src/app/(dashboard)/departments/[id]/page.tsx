@@ -1,8 +1,8 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/auth/session';
-import { prisma } from '@/lib/db/prisma';
 import DepartmentDetailClient from './_components/DepartmentDetailClient';
+import { getSession } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -158,7 +158,7 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
             </p>
           ) : (
             <ul className="space-y-1">
-              {department.children.map((c) => (
+              {department.children.map((c:any) => (
                 <li key={c.id}>
                   <Link
                     href={`/departments/${c.id}`}
@@ -186,8 +186,8 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
             </p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {department.employees.map((e) => {
-                const initials = e.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
+              {department.employees.map((e:any) => {
+                const initials = e.name.split(' ').map((n:any) => n[0]).slice(0, 2).join('').toUpperCase();
                 const roleLabel =
                   e.role === 'HR_MANAGER' ? 'HR Manager' :
                   e.role.charAt(0) + e.role.slice(1).toLowerCase();
@@ -216,7 +216,6 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                         {roleLabel}
                       </span>
-                    </li>
                   </Link>
                 </li>
               );
