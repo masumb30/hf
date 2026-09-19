@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error) {
+    console.log('sign up error: ', error)
     return errorResponse('Internal Server Error', 500);
   }
 }
