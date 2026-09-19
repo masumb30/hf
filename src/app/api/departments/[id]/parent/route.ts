@@ -24,13 +24,13 @@ export const PATCH = withAuth(async (req, context, actor) => {
     if (!parent) return fail('Parent department not found', 404);
   }
 
-  const descendants = await getDescendantDepartments(id, department.path);
-  if (wouldCreateCycle(id, parentId, descendants.map((d) => d.id))) {
+  const descendants = await getDescendantDepartments(id as string, department.path);
+  if (wouldCreateCycle(id as string, parentId, descendants.map((d) => d.id))) {
     return fail('Move would create a cycle');
   }
 
   const oldPath = department.path ?? `/${id}`;
-  const newPath = departmentPath(parent?.path, id);
+  const newPath = departmentPath(parent?.path, id as string);
 
   const updated = await withTx(async (tx) => {
     const moved = await tx.department.update({

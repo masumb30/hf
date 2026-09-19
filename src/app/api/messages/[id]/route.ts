@@ -24,7 +24,7 @@ export const GET = withAuth(async (_req, context, actor) => {
   const id = await paramId(context);
   if (!objectIdSchema.safeParse(id).success) return fail('Invalid message id');
 
-  const { message, allowed } = await loadAccessibleMessage(actor, id);
+  const { message, allowed } = await loadAccessibleMessage(actor, id as string);
   if (!message) return fail('Message not found', 404);
   if (!allowed) return fail('Forbidden', 403);
 
@@ -35,7 +35,7 @@ export const PATCH = withAuth(async (req, context, actor) => {
   const id = await paramId(context);
   if (!objectIdSchema.safeParse(id).success) return fail('Invalid message id');
 
-  const { message, allowed } = await loadAccessibleMessage(actor, id);
+  const { message, allowed } = await loadAccessibleMessage(actor, id as string);
   if (!message) return fail('Message not found', 404);
   if (!allowed) return fail('Forbidden', 403);
   if (message.senderId !== actor.id) return fail('You can only edit your own messages', 403);
@@ -69,7 +69,7 @@ export const DELETE = withAuth(async (_req, context, actor) => {
   const id = await paramId(context);
   if (!objectIdSchema.safeParse(id).success) return fail('Invalid message id');
 
-  const { message, allowed } = await loadAccessibleMessage(actor, id);
+  const { message, allowed } = await loadAccessibleMessage(actor, id as string);
   if (!message) return fail('Message not found', 404);
   if (!allowed) return fail('Forbidden', 403);
   if (message.senderId !== actor.id) return fail('You can only delete your own messages', 403);

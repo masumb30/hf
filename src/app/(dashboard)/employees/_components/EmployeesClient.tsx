@@ -76,24 +76,24 @@ export default function EmployeesClient({ users,
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, [q]);
 
-  function applyFilters(overrides: Partial<{ q: string; role: string; dept: string; status: string; page: string }>) {
-    const next = new URLSearchParams(searchParams.toString());
-    const merged = {
-      q,
-      role,
-      dept,
-      status,
-      page: '1',
-      ...overrides,
-    };
-    Object.entries(merged).forEach(([k, v]) => {
-      if (v) next.set(k, String(v));
-      else next.delete(k);
-    });
-    startTransition(() => {
-      router.push(`${pathname}?${next.toString()}`);
-    });
-  }
+  // function applyFilters(overrides: Partial<{ q: string; role: string; dept: string; status: string; page: string }>) {
+  //   const next = new URLSearchParams(searchParams.toString());
+  //   const merged = {
+  //     q,
+  //     role,
+  //     dept,
+  //     status,
+  //     page: '1',
+  //     ...overrides,
+  //   };
+  //   Object.entries(merged).forEach(([k, v]) => {
+  //     if (v) next.set(k, String(v));
+  //     else next.delete(k);
+  //   });
+  //   startTransition(() => {
+  //     router.push(`${pathname}?${next.toString()}`);
+  //   });
+  // }
 
   // function changeRole(v: string) { setRole(v); applyFilters({ role: v }); }
   // function changeDept(v: string) { setDept(v); applyFilters({ dept: v }); }

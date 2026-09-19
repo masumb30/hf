@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/auth/session';
-import { prisma } from '@/lib/db/prisma';
+import { getSession } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
 import MessageThread from './_components/MessageThread';
 
 interface PageProps {

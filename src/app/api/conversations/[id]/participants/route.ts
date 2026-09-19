@@ -12,7 +12,7 @@ export const GET = withAuth(async (_req, context, actor) => {
   const id = await paramId(context);
   if (!objectIdSchema.safeParse(id).success) return fail('Invalid conversation id');
 
-  const { conversation, allowed } = await requireConversationAccess(actor, id);
+  const { conversation, allowed } = await requireConversationAccess(actor, id as string);
   if (!conversation) return fail('Conversation not found', 404);
   if (!allowed) return fail('Forbidden', 403);
 
@@ -50,7 +50,7 @@ export const POST = withAuth(async (req, context, actor) => {
   const participant = await withTx(async (tx) => {
     const createdParticipant = await tx.conversationParticipant.create({
       data: {
-        conversationId: id,
+        conversationId: id as string,
         userId: parsed.data.userId,
         departmentId: parsed.data.departmentId,
       },

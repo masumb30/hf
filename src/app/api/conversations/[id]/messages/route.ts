@@ -12,7 +12,7 @@ export const GET = withAuth(async (req, context, actor) => {
   const id = await paramId(context);
   if (!objectIdSchema.safeParse(id).success) return fail('Invalid conversation id');
 
-  const { conversation, allowed } = await requireConversationAccess(actor, id);
+  const { conversation, allowed } = await requireConversationAccess(actor, id as string);
   if (!conversation) return fail('Conversation not found', 404);
   if (!allowed) return fail('Forbidden', 403);
 
@@ -40,7 +40,7 @@ export const POST = withAuth(async (req, context, actor) => {
   const id = await paramId(context);
   if (!objectIdSchema.safeParse(id).success) return fail('Invalid conversation id');
 
-  const { conversation, allowed } = await requireConversationAccess(actor, id);
+  const { conversation, allowed } = await requireConversationAccess(actor, id as string);
   if (!conversation) return fail('Conversation not found', 404);
   if (!allowed) return fail('Forbidden', 403);
 
@@ -51,7 +51,7 @@ export const POST = withAuth(async (req, context, actor) => {
   const message = await withTx(async (tx) => {
     const createdMessage = await tx.message.create({
       data: {
-        conversationId: id,
+        conversationId: id as string,
         senderId: actor.id,
         content: parsed.data.content,
       },
@@ -71,7 +71,7 @@ export const POST = withAuth(async (req, context, actor) => {
       entityId: createdMessage.id,
       metadata: { conversationId: id },
     });
-    const recipients = await conversationRecipientUserIds(id, actor.id);
+    const recipients = await conversationRecipientUserIds(id as string, actor.id);
     await notifyUsers(tx, recipients, 'MESSAGE_RECEIVED', {
       conversationId: id,
       messageId: createdMessage.id,

@@ -18,7 +18,7 @@ export const GET = withAuth(async (_req, context, actor) => {
   const id = await paramId(context);
   if (!objectIdSchema.safeParse(id).success) return fail('Invalid attachment id');
 
-  const { attachment, allowed } = await loadAttachment(actor, id);
+  const { attachment, allowed } = await loadAttachment(actor, id as string);
   if (!attachment) return fail('Attachment not found', 404);
   if (!allowed) return fail('Forbidden', 403);
 

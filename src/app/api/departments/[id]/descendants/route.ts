@@ -11,6 +11,6 @@ export const GET = withAuth(async (_req, context) => {
   const department = await prisma.department.findUnique({ where: { id } });
   if (!department) return fail('Department not found', 404);
 
-  const descendants = await getDescendantDepartments(id, department.path);
+  const descendants = await getDescendantDepartments(id as string, department.path);
   return ok({ descendants });
 }, ['ADMIN', 'HR_MANAGER']);
