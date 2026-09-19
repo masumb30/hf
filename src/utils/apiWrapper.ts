@@ -17,7 +17,7 @@ export interface AuthUser {
 }
 
 export type RouteContext = {
-  params?: Promise<Record<string, string>>;
+  params: Promise<Record<string, string>>;
 };
 
 export type AuthenticatedHandler = (

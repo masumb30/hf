@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../prisma/generated/client";
+import { PrismaClient, Prisma } from "../../prisma/generated/client";
 
 import "dotenv/config";
 
@@ -11,7 +11,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // const prisma = new PrismaClient();
 
-// export { prisma };
+export { Prisma };
 
 // for serverless vercel code: 
 // import { PrismaClient } from '@prisma/client'
