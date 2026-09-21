@@ -45,7 +45,7 @@ export default function EmployeeForm({ mode, departments, initial, canChangeRole
     email: initial?.email ?? '',
     phone: initial?.phone ?? '',
     position: initial?.position ?? '',
-    password: '',
+    password: '12345678',
     role: initial?.role ?? 'EMPLOYEE',
     departmentId: initial?.departmentId ?? '',
   });

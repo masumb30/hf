@@ -93,10 +93,12 @@ export const GET = withAuth(async (req, _context, _user) => {
 
 
 export const POST = withAuth(async (req, _context, actor) => {
-  const parsed = parseJson(createUserSchema, await readBody(req));
-  if (!parsed.success) return fail(parsed.message);
+  
+  const parsed = await readBody(req)
+  console.log("parsed",parsed)
+  if (!parsed?.email || !parsed?.password || !parsed?.name) return fail('Missing required fields', 400);
 
-  const body = parsed.data;
+  const body = parsed;
   if (actor.role === 'HR_MANAGER' && body.role && body.role !== 'EMPLOYEE') {
     return fail('HR managers can only create employees', 403);
   }

@@ -12,8 +12,8 @@ export interface AuthUser {
   email: string;
   role: 'ADMIN' | 'HR_MANAGER' | 'EMPLOYEE';
   name: string;
-  departmentId: string | null;
-  status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
+  departmentId?: string | null;
+  status?: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
 }
 
 export type RouteContext = {
@@ -45,31 +45,34 @@ export function withAuth(
         return errorResponse('Unauthorized: No token provided', 401);
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      const user = jwt.verify(token, process.env.JWT_SECRET!) as {
         id: string;
+        email:string;
+        role: 'ADMIN' | 'HR_MANAGER' | 'EMPLOYEE';
+        name: string;
       };
 
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.id },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          name: true,
-          departmentId: true,
-          status: true,
-          deactivatedAt: true,
-          deletedAt: true,
-        },
-      });
+      // const user = await prisma.user.findUnique({
+      //   where: { id: decoded.id },
+      //   select: {
+      //     id: true,
+      //     email: true,
+      //     role: true,
+      //     name: true,
+      //     departmentId: true,
+      //     status: true,
+      //     deactivatedAt: true,
+      //     deletedAt: true,
+      //   },
+      // });
 
-      if (!user || user.deletedAt) {
+      if (!user ) {
         return errorResponse('Unauthorized: User not found', 401);
       }
 
-      if (user.deactivatedAt || user.status !== 'ACTIVE') {
-        return errorResponse('Forbidden: Account is not active', 403);
-      }
+      // if (user.deactivatedAt || user.status !== 'ACTIVE') {
+      //   return errorResponse('Forbidden: Account is not active', 403);
+      // }
 
       if (allowedRoles && allowedRoles.length > 0) {
         if (!hasRequiredRole(user.role, allowedRoles)) {
@@ -82,8 +85,8 @@ export function withAuth(
         email: user.email,
         role: user.role,
         name: user.name,
-        departmentId: user.departmentId,
-        status: user.status,
+        // departmentId: user.departmentId,
+        // status: user.status,
       });
     } catch (error: unknown) {
       console.error('API Error:', error);

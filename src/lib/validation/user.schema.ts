@@ -5,10 +5,10 @@ export const createUserSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
-  phone: z.string().optional(),
-  position: z.string().optional(),
-  role: z.enum(['ADMIN', 'HR_MANAGER', 'EMPLOYEE']).optional(),
-  departmentId: objectIdSchema.optional(),
+  phone: z.string().optional().nullish(),
+  position: z.string().optional().nullish(),
+  role: z.enum(['ADMIN', 'HR_MANAGER', 'EMPLOYEE']).optional().default('EMPLOYEE'),
+  departmentId: objectIdSchema.optional().nullish(),
 });
 
 export const updateUserSchema = z.object({

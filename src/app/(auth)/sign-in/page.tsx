@@ -40,6 +40,44 @@ export default function SignInPage() {
     }
   };
 
+  const admin = {
+    email: 'admin@gmail.com',
+    password: '12345678',
+  }
+  const hr = [
+    {email: 'hr1@gmail.com', password: '12345678'},
+    {email: 'hr2@gmail.com', password: '12345678'},
+    {email: 'hr3@gmail.com', password: '12345678'},
+  ]
+  const employee= [
+    {email: 'employee1@gmail.com', password: '12345678'},
+    {email: 'employee2@gmail.com', password: '12345678'},
+    {email: 'employee3@gmail.com', password: '12345678'},
+    {email: 'employee4@gmail.com', password: '12345678'},
+    {email: 'employee5@gmail.com', password: '12345678'},
+    {email: 'employee6@gmail.com', password: '12345678'},
+    {email: 'employee7@gmail.com', password: '12345678'},
+    {email: 'employee8@gmail.com', password: '12345678'},
+  ]
+
+  const handleClickAdmin = () => {
+    setEmail(admin.email);
+    setPassword(admin.password);
+  }
+  const handleClickHR = () => {
+    // randomly choose an HR employee
+    const index = Math.floor(Math.random() * hr.length);
+    setEmail(hr[index].email);
+    setPassword(hr[index].password);
+  }
+  const handleClickEmployee = () => {
+    // randomly choose an employee
+    const index = Math.floor(Math.random() * employee.length);
+    setEmail(employee[index].email);
+    setPassword(employee[index].password);
+  }
+
+
   return (
     <div className="w-full max-w-md p-6 bg-slate-900 border border-slate-800/80 rounded-xl shadow-2xl transition-all duration-200 ease-in-out">
       <div className="mb-6 text-center">
@@ -52,6 +90,12 @@ export default function SignInPage() {
           {errorMessage}
         </div>
       )}
+
+      <div className="flex justify-center text-white">
+        <button onClick={handleClickAdmin} className="w-full mt-2 py-2.5 px-4 bg-indigo-500 hover:bg-indigo-600 text-slate-100 font-medium rounded-lg text-sm transition-all duration-200 ease-in-out cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">Admin</button>
+        <button onClick={handleClickHR} className="w-full mt-2 py-2.5 px-4 bg-indigo-500 hover:bg-indigo-600 text-slate-100 font-medium rounded-lg text-sm transition-all duration-200 ease-in-out cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">Hr</button>
+        <button onClick={handleClickEmployee} className="w-full mt-2 py-2.5 px-4 bg-indigo-500 hover:bg-indigo-600 text-slate-100 font-medium rounded-lg text-sm transition-all duration-200 ease-in-out cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">Employee</button> 
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
