@@ -154,7 +154,7 @@ export default function ClockWidget({ today }: Props) {
             <button
               onClick={handleClockIn}
               disabled={pending === 'in'}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
             >
               {pending === 'in' ? 'Clocking in…' : 'Clock in'}
             </button>
