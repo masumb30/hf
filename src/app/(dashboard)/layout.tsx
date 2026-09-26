@@ -3,6 +3,7 @@ import Topbar from '@/components/layout/Topbar';
 import { ToastContainer } from 'react-toastify';
 import Sidebar from '../Sidebar';
 import { getSession } from '@/lib/session';
+import DashboardClientLayout from '../DashboardClientLayout';
 
 export default async function DashboardLayout({
   children,
@@ -30,23 +31,26 @@ export default async function DashboardLayout({
   console.log(user);
 
   return (
-    <div className="flex relative min-h-[calc(100vh-4rem)] bg-slate-950">
-          {/* Sidebar navigation */}
-          <Sidebar user={user} />
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            pauseOnHover
-            draggable
-            theme="colored"
-          />
-          {/* Main page content area */}
-          <main className="flex-1 overflow-y-auto p-2 sm:p-8">
-            {children}
-          </main>
-        </div>
+    <DashboardClientLayout user={user}>
+      {children}
+    </DashboardClientLayout>
+    // <div className="flex relative min-h-[calc(100vh-4rem)] bg-red-950 relative">
+    //       {/* Sidebar navigation */}
+    //       <Sidebar user={user} />
+    //       <ToastContainer
+    //         position="top-right"
+    //         autoClose={3000}
+    //         hideProgressBar={false}
+    //         newestOnTop
+    //         closeOnClick
+    //         pauseOnHover
+    //         draggable
+    //         theme="colored"
+    //       />
+    //       {/* Main page content area */}
+    //       <main className="flex-1 overflow-y-auto p-2 sm:p-8">
+    //         {children}
+    //       </main>
+    //     </div>
   );
 }

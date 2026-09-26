@@ -41,7 +41,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function RoleBadge({ role }: { role: string }) {
   const map: Record<string, string> = {
-    ADMIN: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300',
+    ADMIN: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
     HR_MANAGER: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
     EMPLOYEE: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
   };
@@ -195,7 +195,7 @@ export default function EmployeesClient({ users,
                   <tr className="text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Department</th>
-                    <th className="px-4 py-3">Position</th>
+                    {/* <th className="px-4 py-3">Position</th> */}
                     <th className="px-4 py-3">Role</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
@@ -205,7 +205,7 @@ export default function EmployeesClient({ users,
                   {users.map((u) => {
                     const initials = u.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
                     return (
-                      <tr key={u.id} className={`hover:bg-slate-950/60  ${user.id === u.id ? 'bg-blue-600/10  ' : ''} cursor-pointer`}>
+                      <tr key={u.id} className={`${user.id === u.id ? 'hidden': ''} hover:bg-slate-950/60  ${user.id === u.id ? 'bg-blue-600/10  ' : ''} cursor-pointer`}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             
@@ -220,7 +220,7 @@ export default function EmployeesClient({ users,
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                          {u.department?.name ?? <span className="text-slate-400 dark:text-slate-500">—</span>}
+                          {u.department?.name ?? <span className="text-red-400 dark:text-red-500">Not Assigned</span>}
                         </td>
                         {/* <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                           {u.position ?? <span className="text-slate-400 dark:text-slate-500">—</span>}
@@ -230,7 +230,7 @@ export default function EmployeesClient({ users,
                         <td className="px-4 py-3 text-right">
                           <Link
                             href={`/employees/${u.id}`}
-                            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+                            className="rounded-lg px-4 py-4 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40 hover:text-indigo-300"
                           >
                             View
                           </Link>

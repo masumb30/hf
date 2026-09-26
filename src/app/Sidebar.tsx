@@ -198,22 +198,22 @@ const NAV_MAP = {
     EMPLOYEE: EMPLOYEE_NAV_ITEMS,
 };
 
-export default function Sidebar({user}:{user:{id:string,email:string,role:string, name:string}}) {
+export default function Sidebar({user, isCollapsed, setIsCollapsed, collapsed}:{user:{id:string,email:string,role:string, name:string}, isCollapsed:boolean, setIsCollapsed:React.Dispatch<React.SetStateAction<boolean>>, collapsed:boolean}) {
     // const { data: session } = useSession();
       const role = user?.role;
 
     const items = role === 'ADMIN' ? ADMIN_NAV_ITEMS : role === 'HR_MANAGER' ? HR_MANAGER_NAV_ITEMS : EMPLOYEE_NAV_ITEMS;
-    const [isMobile, setIsMobile] = useState(false);
+    // const [isMobile, setIsMobile] = useState(false);
     const pathname = usePathname();
-    const [isCollapsed, setIsCollapsed] = useState(false);
-    useEffect(() => {
-        const check = () => setIsMobile(window.innerWidth < 768);
-        check();
-        window.addEventListener('resize', check);
-        return () => window.removeEventListener('resize', check);
-    }, []);
+    // const [isCollapsed, setIsCollapsed] = useState(false);
+    // useEffect(() => {
+    //     const check = () => setIsMobile(window.innerWidth < 768);
+    //     check();
+    //     window.addEventListener('resize', check);
+    //     return () => window.removeEventListener('resize', check);
+    // }, []);
 
-    const collapsed = isMobile || isCollapsed;
+    // const collapsed = isMobile || isCollapsed;
     const handleLogout = async () => {
         console.log('calling sign out')
         await fetch('/api/auth/sign-out', {
@@ -230,7 +230,7 @@ export default function Sidebar({user}:{user:{id:string,email:string,role:string
 
         <motion.aside
             initial={false}
-            className={`sticky  flex min-h-[100vh] flex-col justify-between border-r border-slate-200/80 bg-white p-3 dark:border-slate-800/80 dark:bg-slate-900 md:p-4 overflow-hidden shrink-0 transition-[width] duration-250 ease-in-out ${isCollapsed ? 'w-[80px]' : 'w-[80px] md:w-[256px]'
+            className={`fixed  flex h-[100vh] flex-col justify-between border-r border-slate-200/80 bg-white p-3 dark:border-slate-800/80 dark:bg-slate-900 md:p-4 overflow-hidden shrink-0 transition-[width] duration-250 ease-in-out ${isCollapsed ? 'w-[80px]' : 'w-[80px] md:w-[256px]'
                 }`}
         >
             {/* Upper Navigation Links */}
